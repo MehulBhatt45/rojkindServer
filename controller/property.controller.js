@@ -1,46 +1,43 @@
 var propertyModel = require('../model/property.model');
-
+var path = require('path');
+var _ = require('lodash');
 var propertyController = {
     getProperties: function(req,res){
-    },
-    
-    getUnverifiedProperties: function(req,res){
-    },
-    
-    getAvilableProperties: function(req,res){
-    },
-    
-    getUnavilableProperties: function(req,res){
-    },
-    
-    getSoldProperties: function(req,res){
-    },
-    
-    agentWiseProperty: function(req,res){
-    },
-    
-    getRentedProperties: function(req,res){
-    },
-    
-    agentWiseExpireProperty: function(req,res){
-    },
-    
-    getRentedPropertiesCount: function(req,res){
-    },
-    
-    agentWisePropertyCount: function(req,res){
-    },
-    
-    getAvilablePropertiesCount: function(req,res){
-    },
-    
-    getSoldPropertiesCount: function(req,res){
-    },
-
-    getUnverifiedPropertiesCount: function(req,res){
+        propertyModel
+        .find({})
+        .sort({"_id" : -1})
+        .limit(5)
+        .populate('agent')
+        .exec((err, properties)=>{
+            if(err){
+                res.status(500).send(err);
+            }else if(properties){
+                res.status(200).json({
+                    message: "Found al properties",
+                    data: properties
+                });
+            }else{
+                res.status(404).send("No properties found");
+            }
+        })
     },
     
     getProperty: function(req,res){
+        propertyModel
+        .findOne({ _id: req.params.propertyId })
+        .populate('agent')
+        .exec((err, property)=>{
+            if(err){
+                res.status(500).send(err);
+            }else if(property){
+                res.status(200).json({
+                    message: "Found al properties",
+                    data: property
+                });
+            }else{
+                res.status(404).send("No property found");
+            }
+        })
     },
     
     removeProperty: function(req,res){
@@ -50,15 +47,59 @@ var propertyController = {
     },
     
     addProperty: function(req,res){
+        const property = JSON.parse(req.body.property);
+        console.log(property);
+        const newProperty = new propertyModel(property);
+        newProperty.save((error, savedProperty)=>{
+            if(error){
+                console.log('error: ', error);
+                res.status(500).send(error)
+            }else if(savedProperty){
+                var uploadPath = path.join(__dirname, "../uploads/property/"+savedProperty._id+"/");
+                req.file('uploadFile').upload({
+                    maxBytes: 500000000,
+                    dirname: uploadPath,
+                    saveAs: function (__newFileStream, next) {
+                        return next(undefined, __newFileStream.filename);
+                    }
+                }, function(err, files){
+                    if (err) {
+                        console.log(err);
+                        res.status(500).send(err);
+                    }else{
+                        console.log(files);
+                        var fileNames=savedProperty.images;
+                        if(files.length>0){
+                            _.forEach(files, (gotFile)=>{
+                                fileNames.push(gotFile.fd.split('/uploads/').reverse()[0])
+                            })
+                        }
+                        propertyModel
+                        .findOneAndUpdate({_id: savedProperty._id}, {$set: {images: fileNames}}, { upsert: true, new: true })
+                        .exec((err , update)=>{
+                            if (err) {
+                                console.log(err);
+                                res.status(500).send(err);
+                            }else{
+                                res.status(201).json({
+                                    message: "new property added",
+                                    data: update
+                                })
+                            }	
+                        })
+                    }
+                })
+                
+            }else{
+                res.status(400).send('Bad request');
+            }
+        })
     },
     
     changePropertyStatus: function(req,res){
     },
     
     VerifyPropertyStatus: function(req,res){
-    },
-
-    deleteProperty: function(req,res){
     },
 
     searchProperty: function(req,res){

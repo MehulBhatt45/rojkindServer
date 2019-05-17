@@ -2,8 +2,8 @@ var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var propertyTypeSchema = new Schema({
-    Title : String,
-    Description : String
+    title : String,
+    description : String
 });
 
 module.exports = mongoose.model('propertyType', propertyTypeSchema);
