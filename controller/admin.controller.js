@@ -15,10 +15,10 @@ let adminController = {
                     if(err || isMatch == false){
                         return res.status(404).send('No User Found');
                     }else{
-                        const payload = {
-                            'user': admin
-                        };
-                        var token = jwt.sign(payload,'rojkind');
+                        // const payload = {
+                        //     'user': admin
+                        // };
+                        var token = jwt.sign(JSON.stringify(admin),'rojkind');
                         res.send({
                             success: true,
                             message: 'Enjoy your token!',
